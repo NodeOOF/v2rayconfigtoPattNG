@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VLESS / Trojan Converter - CS & FM & FP=unsafe + Rename</title>
+    <title>VLESS / Trojan Converter - CS & FM & FP=unsafe </title>
     <style>
         * {
             box-sizing: border-box;
@@ -163,9 +163,6 @@
         .badge-warning {
             background: #d29922;
         }
-        .badge-rename {
-            background: #9e6a03;
-        }
         @media (max-width: 600px) {
             .container { padding: 15px; }
             .btn { padding: 8px 16px; font-size: 13px; }
@@ -179,35 +176,33 @@
             <span>⚡ VPN Link Converter</span>
             <span class="badge">CS + FM</span>
             <span class="badge badge-warning">FP=unsafe</span>
-            <span class="badge badge-rename">@hajali_o - N</span>
         </h1>
         <div class="grid">
             <div>
                 <div class="label-row">
-                    <label for="inputLinks">📥 لینک‌های ورودی (هر خط یک لینک)</label>
+                    <label for="inputLinks">📥 کانفیگ های ورودی (هر خط یک لینک)</label>
                     <span id="inputCount">۰ لینک</span>
                 </div>
                 <textarea id="inputLinks" placeholder="مثال:&#10;vless://uuid@domain.com:80?path=/...&amp;type=ws#Name&#10;trojan://password@ip:443?security=tls&amp;type=ws#Name"></textarea>
             </div>
 
             <div class="actions">
-                <button class="btn btn-primary" id="convertBtn">🚀 تبدیل + تغییر نام</button>
+                <button class="btn btn-primary" id="convertBtn">🚀 تبدیل + </button>
                 <button class="btn btn-secondary" id="copyBtn">📋 کپی خروجی</button>
                 <button class="btn btn-danger" id="clearBtn">🗑️ پاک کردن همه</button>
-                <button class="btn" id="sampleBtn">📌 درج نمونه</button>
             </div>
 
             <div>
                 <div class="label-row">
-                    <label for="outputLinks">📤 لینک‌های خروجی (تبدیل‌شده با نام جدید)</label>
+                    <label for="outputLinks">📤 کانفیگ های خروجی </label>
                     <span id="outputCount">۰ لینک</span>
                 </div>
-                <textarea class="output" id="outputLinks" readonly placeholder="لینک‌های تبدیل‌شده با نام‌های جدید نمایش داده می‌شوند..."></textarea>
+                <textarea class="output" id="outputLinks" readonly placeholder="کانفیگ هایتبدیل‌شده با نام‌های جدید نمایش داده می‌شوند..."></textarea>
             </div>
             <div class="stats" id="statusMessage">✅ آمادهٔ تبدیل</div>
         </div>
         <div class="footer">
-            پارامترهای اضافه/بازنویسی‌شده: <code>cs</code>، <code>fm</code>، <code>fp=unsafe</code> و نام‌گذاری مجدد با <code>@hajali_o - شماره</code>
+            <a href="https://nodeoof.github.io/v2rayconfigtoPattNG/" target="_blank" style="color: #58a6ff; text-decoration: none;">https://nodeoof.github.io/v2rayconfigtoPattNG/</a>
         </div>
     </div>
 
@@ -217,7 +212,7 @@
             const CS_VALUE = 'TLS_AES_256_GCM_SHA384%3ATLS_CHACHA20_POLY1305_SHA256%3ATLS_AES_128_GCM_SHA256%3ATLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384%3ATLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384%3ATLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256%3ATLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256%3ATLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256%3ATLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256%3ATLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA%3ATLS_ECDHE_RSA_WITH_AES_256_CBC_SHA%3ATLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256%3ATLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256';
             const FM_VALUE = '%7B%22tcp%22%3A%20%5B%7B%22type%22%3A%20%22fragment%22%2C%20%22settings%22%3A%20%7B%22packets%22%3A%20%22tlshello%22%2C%20%22lengths%22%3A%20%5B%225%22%2C%2294%22%2C%20%221%22%5D%2C%20%22delays%22%3A%20%5B%220%22%5D%2C%20%22maxSplit%22%3A%20%220%22%7D%7D%2C%7B%22type%22%3A%20%22fragment%22%2C%20%22settings%22%3A%20%7B%22packets%22%3A%20%221-1%22%2C%20%22lengths%22%3A%20%5B%22109%22%2C%20%221%22%5D%2C%20%22delays%22%3A%20%5B%221%22%5D%2C%20%22maxSplit%22%3A%20%22355%22%7D%7D%5D%7D';
             const FP_VALUE = 'unsafe';
-            const NAME_PREFIX = '@hajali_o - ';
+            const NAME_PREFIX = 'github.com/NodeOOF - ';
 
             // عناصر DOM
             const inputText = document.getElementById('inputLinks');
@@ -245,7 +240,7 @@
             function convertLinks(text) {
                 const lines = text.split('\n');
                 const results = [];
-                let validIndex = 0; // شمارنده برای نام‌گذاری فقط لینک‌های معتبر
+                let validIndex = 0;
 
                 for (let line of lines) {
                     const originalLine = line;
@@ -262,7 +257,6 @@
                     }
 
                     try {
-                        // شمارنده را افزایش بده (برای این لینک معتبر)
                         validIndex++;
 
                         let base, queryAndHash = '';
@@ -281,10 +275,9 @@
                             query = queryAndHash;
                         } else {
                             query = queryAndHash.substring(0, hashIndex);
-                            hash = queryAndHash.substring(hashIndex); // شامل #
+                            hash = queryAndHash.substring(hashIndex);
                         }
 
-                        // پارس کردن پارامترها
                         const params = new Map();
                         if (query) {
                             const pairs = query.split('&');
@@ -302,27 +295,21 @@
                             }
                         }
 
-                        // اعمال مقادیر جدید (بازنویسی)
                         params.set('cs', CS_VALUE);
                         params.set('fm', FM_VALUE);
                         params.set('fp', FP_VALUE);
 
-                        // ساخت query جدید
                         const newPairs = [];
                         for (let [key, value] of params) {
                             newPairs.push(key + '=' + value);
                         }
                         const newQuery = newPairs.join('&');
 
-                        // ساخت نام جدید با شماره‌گذاری
                         const newName = NAME_PREFIX + validIndex;
-
-                        // لینک نهایی: base + ? + query + # + name
                         let newLink = base + '?' + newQuery + '#' + newName;
 
                         results.push(newLink);
                     } catch (e) {
-                        // در صورت خطا، خط اصلی برگردانده شود
                         results.push(originalLine);
                         console.warn('Error converting line:', originalLine, e);
                     }
@@ -393,19 +380,10 @@
                 statusMsg.style.color = '#8b949e';
             }
 
-            function insertSample() {
-                const sample = `vless://`;
-                inputText.value = sample;
-                statusMsg.textContent = '📌 نمونه درج شد. حالا روی "تبدیل" کلیک کنید تا fp=unsafe و نام‌های جدید اعمال شوند.';
-                statusMsg.style.color = '#58a6ff';
-                updateStats(sample, '');
-            }
 
-            // اتصال رویدادها
             convertBtn.addEventListener('click', performConversion);
             copyBtn.addEventListener('click', copyOutput);
             clearBtn.addEventListener('click', clearAll);
-            sampleBtn.addEventListener('click', insertSample);
 
             inputText.addEventListener('input', function() {
                 const count = countValidLinks(this.value);
@@ -416,7 +394,7 @@
             });
 
             updateStats('', '');
-            statusMsg.textContent = '💡 لینک‌ها را وارد کرده و روی "تبدیل" کلیک کنید (fp=unsafe + نام‌گذاری جدید).';
+            statusMsg.textContent = '💡 لینک‌ها را وارد کرده و روی "تبدیل" کلیک کنید (fp=unsafe).';
             statusMsg.style.color = '#8b949e';
         })();
     </script>
