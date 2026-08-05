@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>پنل سیگنال — مبدل VLESS / Trojan</title>
+    <title>پنل سیگنال — مبدل VLESS / Trojan / Shadowsocks</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -355,13 +355,13 @@
     <div class="console">
         <div class="console__header">
             <div class="header__top">
-                <h1>پنل مبدل VLESS / Trojan <span class="eyebrow">SIGNAL BENCH</span></h1>
+                <h1>پنل مبدل VLESS / Trojan / Shadowsocks <span class="eyebrow">SIGNAL BENCH</span></h1>
                 <div class="header__badges">
                     <span class="chip chip--info">CS + FM</span>
                     <span class="chip chip--warn">FP = unsafe</span>
                 </div>
             </div>
-            <p class="sub">لینک‌های VLESS و Trojan را وارد کن؛ پارامترهای cs، fm و fp روی هرکدام اعمال می‌شود و هر لینک با یک نام جدید و شماره‌دار خروجی گرفته می‌شود.</p>
+            <p class="sub">لینک‌های VLESS، Trojan و Shadowsocks (ss://) را وارد کن؛ پارامترهای cs، fm و fp روی VLESS/Trojan و فقط fm روی Shadowsocks اعمال می‌شود. هر لینک با یک نام جدید و شماره‌دار خروجی گرفته می‌شود.</p>
         </div>
 
         <div class="grid">
@@ -371,7 +371,7 @@
                     <span id="inputCount" class="readout">۰ لینک</span>
                 </div>
                 <div class="field-frame">
-                    <textarea id="inputLinks" placeholder="مثال:&#10;vless://uuid@domain.com:80?path=/...&amp;type=ws#Name&#10;trojan://password@ip:443?security=tls&amp;type=ws#Name"></textarea>
+                    <textarea id="inputLinks" placeholder="مثال:&#10;vless://uuid@domain.com:80?path=/...&amp;type=ws#Name&#10;trojan://password@ip:443?security=tls&amp;type=ws#Name&#10;ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpwYXNzd29yZA@example.com:8080#Name"></textarea>
                 </div>
             </div>
 
@@ -417,7 +417,6 @@
             const convertBtn = document.getElementById('convertBtn');
             const copyBtn = document.getElementById('copyBtn');
             const clearBtn = document.getElementById('clearBtn');
-            const sampleBtn = document.getElementById('sampleBtn');
             const inputCount = document.getElementById('inputCount');
             const outputCount = document.getElementById('outputCount');
             const statusMsg = document.getElementById('statusMessage');
@@ -427,7 +426,8 @@
                 const lines = text.split('\n').filter(line => line.trim() !== '');
                 let count = 0;
                 for (let line of lines) {
-                    if (line.startsWith('vless://') || line.startsWith('trojan://')) {
+                    const trimmed = line.trim();
+                    if (trimmed.startsWith('vless://') || trimmed.startsWith('trojan://') || trimmed.startsWith('ss://')) {
                         count++;
                     }
                 }
@@ -448,7 +448,11 @@
                         continue;
                     }
 
-                    if (!trimmed.startsWith('vless://') && !trimmed.startsWith('trojan://')) {
+                    // پردازش فقط خطوطی که با vless، trojan یا ss شروع می‌شوند
+                    const isVless = trimmed.startsWith('vless://');
+                    const isTrojan = trimmed.startsWith('trojan://');
+                    const isSS = trimmed.startsWith('ss://');
+                    if (!isVless && !isTrojan && !isSS) {
                         results.push(originalLine);
                         continue;
                     }
@@ -472,9 +476,10 @@
                             query = queryAndHash;
                         } else {
                             query = queryAndHash.substring(0, hashIndex);
-                            hash = queryAndHash.substring(hashIndex);
+                            hash = queryAndHash.substring(hashIndex); // شامل #
                         }
 
+                        // پارس کردن پارامترهای موجود
                         const params = new Map();
                         if (query) {
                             const pairs = query.split('&');
@@ -492,9 +497,19 @@
                             }
                         }
 
-                        params.set('cs', CS_VALUE);
-                        params.set('fm', FM_VALUE);
-                        params.set('fp', FP_VALUE);
+                        // اعمال تنظیمات بر اساس نوع پروتکل
+                        if (isVless || isTrojan) {
+                            // برای VLESS و Trojan: cs، fm و fp را اضافه/بازنویسی کن
+                            params.set('cs', CS_VALUE);
+                            params.set('fm', FM_VALUE);
+                            params.set('fp', FP_VALUE);
+                        } else if (isSS) {
+                            // برای Shadowsocks: فقط fm را اضافه کن (cs و fp معنی ندارند)
+                            params.set('fm', FM_VALUE);
+                            // در صورت وجود cs یا fp، آنها را حذف می‌کنیم (اختیاری)
+                            // params.delete('cs');
+                            // params.delete('fp');
+                        }
 
                         const newPairs = [];
                         for (let [key, value] of params) {
@@ -522,7 +537,8 @@
                 const outLines = output.split('\n').filter(l => l.trim() !== '');
                 let outCount = 0;
                 for (let line of outLines) {
-                    if (line.startsWith('vless://') || line.startsWith('trojan://')) {
+                    const trimmed = line.trim();
+                    if (trimmed.startsWith('vless://') || trimmed.startsWith('trojan://') || trimmed.startsWith('ss://')) {
                         outCount++;
                     }
                 }
@@ -542,10 +558,10 @@
                 updateStats(input, outputText.value);
 
                 if (result.count > 0) {
-                    statusMsg.textContent = `✅ ${result.count} لینک با موفقیت تبدیل و نام‌گذاری شدند (fp=unsafe).`;
+                    statusMsg.textContent = `✅ ${result.count} لینک با موفقیت تبدیل و نام‌گذاری شدند (fp=unsafe برای VLESS/Trojan، fm برای همگی).`;
                     statusMsg.style.color = '#3fb950';
                 } else {
-                    statusMsg.textContent = '⚠️ هیچ لینک معتبری (VLESS/Trojan) یافت نشد.';
+                    statusMsg.textContent = '⚠️ هیچ لینک معتبری (VLESS/Trojan/SS) یافت نشد.';
                     statusMsg.style.color = '#f85149';
                 }
             }
@@ -577,7 +593,6 @@
                 statusMsg.style.color = '#8b949e';
             }
 
-
             convertBtn.addEventListener('click', performConversion);
             copyBtn.addEventListener('click', copyOutput);
             clearBtn.addEventListener('click', clearAll);
@@ -591,7 +606,7 @@
             });
 
             updateStats('', '');
-            statusMsg.textContent = '💡 لینک‌ها را وارد کرده و روی "تبدیل" کلیک کنید (fp=unsafe).';
+            statusMsg.textContent = '💡 لینک‌ها را وارد کرده و روی "تبدیل" کلیک کنید (VLESS/Trojan: cs+fm+fp، SS: فقط fm).';
             statusMsg.style.color = '#8b949e';
         })();
     </script>
