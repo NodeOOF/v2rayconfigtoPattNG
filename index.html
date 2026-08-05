@@ -1,206 +1,405 @@
 <!DOCTYPE html>
-<html dir="ltr">
+<html dir="rtl" lang="fa">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VLESS / Trojan Converter - CS & FM & FP=unsafe </title>
+    <title>پنل سیگنال — مبدل VLESS / Trojan</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        :root {
+            --bg: #0a0d10;
+            --panel: #10151a;
+            --panel-raised: #161d24;
+            --border: #232b33;
+            --border-soft: #1b2129;
+            --text: #e7ecef;
+            --text-dim: #8391a0;
+            --text-faint: #4b565f;
+            --amber: #ffb454;
+            --amber-soft: rgba(255, 180, 84, .13);
+            --cyan: #5eead4;
+            --cyan-soft: rgba(94, 234, 212, .13);
+            --red: #ff6b6b;
+            --red-soft: rgba(255, 107, 107, .13);
+            --radius: 12px;
+            --mono: 'JetBrains Mono', 'Courier New', monospace;
+            --sans: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
         }
+
+        * { box-sizing: border-box; }
+
+        html, body { margin: 0; padding: 0; }
+
         body {
-            background: #0d1117;
-            color: #e6edf3;
+            background:
+                repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0px, rgba(255,255,255,.025) 1px, transparent 1px, transparent 34px),
+                repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0px, rgba(255,255,255,.025) 1px, transparent 1px, transparent 34px),
+                var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             min-height: 100vh;
-            margin: 0;
-            padding: 20px;
+            padding: 40px 20px;
         }
-        .container {
-            max-width: 1000px;
+
+        .console {
+            max-width: 900px;
             width: 100%;
-            background: #161b22;
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-            border: 1px solid #30363d;
+            background: var(--panel);
+            border-radius: 18px;
+            padding: 32px;
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.03);
+            position: relative;
+            overflow: hidden;
         }
+
+        .console::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--amber), var(--cyan), transparent);
+            opacity: .6;
+        }
+
+        /* ---------- Header ---------- */
+        .console__header { margin-bottom: 26px; }
+
+        .header__top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
         h1 {
-            font-size: 24px;
-            margin-top: 0;
-            margin-bottom: 8px;
-            color: #f0f6fc;
+            font-size: 22px;
+            font-weight: 800;
+            margin: 0;
+            color: #f5f8fa;
             display: flex;
             align-items: center;
             gap: 10px;
-            flex-wrap: wrap;
         }
+
+        h1 .eyebrow {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .12em;
+            color: var(--text-faint);
+            background: var(--panel-raised);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 3px 8px;
+            direction: ltr;
+        }
+
+        .header__badges { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .chip {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .04em;
+            padding: 5px 10px 5px 8px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            direction: ltr;
+            border: 1px solid;
+        }
+
+        .chip::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            box-shadow: 0 0 6px currentColor;
+        }
+
+        .chip--info { color: var(--cyan); background: var(--cyan-soft); border-color: rgba(94,234,212,.3); }
+        .chip--warn { color: var(--amber); background: var(--amber-soft); border-color: rgba(255,180,84,.35); }
+
         .sub {
-            color: #8b949e;
-            font-size: 14px;
-            margin-bottom: 25px;
-            border-bottom: 1px solid #21262d;
-            padding-bottom: 15px;
+            color: var(--text-dim);
+            font-size: 13.5px;
+            line-height: 1.7;
+            margin: 12px 0 0;
+            padding-bottom: 18px;
+            border-bottom: 1px dashed var(--border);
         }
-        .grid {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .label-row {
+
+        /* ---------- Layout ---------- */
+        .grid { display: flex; flex-direction: column; gap: 18px; }
+
+        .channel__label-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 9px;
+            gap: 10px;
+        }
+
+        .channel__label {
+            display: flex;
+            align-items: center;
+            gap: 9px;
             font-weight: 600;
-            color: #c9d1d9;
+            color: #cfd8de;
             font-size: 14px;
         }
-        .label-row span {
-            background: #21262d;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            color: #8b949e;
+
+        .channel__tag {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: .06em;
+            color: #0a0d10;
+            background: var(--amber);
+            border-radius: 5px;
+            padding: 2px 7px;
+            direction: ltr;
         }
+
+        .channel--out .channel__tag { background: var(--cyan); }
+
+        .readout {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            color: var(--text-dim);
+            background: var(--panel-raised);
+            border: 1px solid var(--border);
+            padding: 4px 11px;
+            border-radius: 20px;
+            direction: ltr;
+        }
+
+        /* ---------- Field frame (oscilloscope-style corners) ---------- */
+        .field-frame {
+            position: relative;
+            padding: 6px;
+        }
+
+        .field-frame::before, .field-frame::after {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--amber);
+            opacity: .55;
+            pointer-events: none;
+        }
+
+        .field-frame::before { top: 0; right: 0; border-left: none; border-bottom: none; border-radius: 0 6px 0 0; }
+        .field-frame::after { bottom: 0; left: 0; border-right: none; border-top: none; border-radius: 0 0 0 6px; }
+
+        .channel--out .field-frame::before,
+        .channel--out .field-frame::after { border-color: var(--cyan); }
+
         textarea {
             width: 100%;
-            height: 220px;
-            background: #0d1117;
-            border: 1px solid #30363d;
-            border-radius: 10px;
-            color: #e6edf3;
-            padding: 15px;
-            font-size: 13px;
-            font-family: 'Courier New', monospace;
+            height: 210px;
+            background: #0c1014;
+            border: 1px solid var(--border-soft);
+            border-radius: 8px;
+            color: var(--text);
+            padding: 14px;
+            font-size: 12.5px;
+            font-family: var(--mono);
+            direction: ltr;
+            text-align: left;
             resize: vertical;
             outline: none;
-            transition: border 0.2s;
-            line-height: 1.6;
+            transition: border-color .15s, box-shadow .15s;
+            line-height: 1.65;
         }
-        textarea:focus {
-            border-color: #58a6ff;
-            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+
+        textarea::placeholder { color: var(--text-faint); }
+
+        textarea:focus, textarea:focus-visible {
+            border-color: var(--amber);
+            box-shadow: 0 0 0 3px var(--amber-soft);
         }
-        textarea.output {
-            height: 280px;
-            background: #0d1117;
+
+        textarea.output { height: 260px; }
+        textarea.output:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-soft); }
+
+        /* ---------- Signal divider ---------- */
+        .signal-divider {
+            width: 100%;
+            height: 26px;
+            opacity: .7;
         }
+
+        .signal-divider path {
+            fill: none;
+            stroke: var(--amber);
+            stroke-width: 1.4;
+            stroke-dasharray: 4 5;
+            animation: drift 6s linear infinite;
+        }
+
+        @keyframes drift { to { stroke-dashoffset: -180; } }
+
+        /* ---------- Controls ---------- */
         .actions {
             display: flex;
             flex-wrap: wrap;
-            gap: 12px;
-            margin: 10px 0 5px;
+            gap: 10px;
         }
+
         .btn {
-            background: #21262d;
-            border: 1px solid #30363d;
-            color: #c9d1d9;
-            padding: 10px 24px;
-            border-radius: 30px;
+            font-family: var(--mono);
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            font-size: 12px;
             font-weight: 600;
-            font-size: 14px;
+            padding: 12px 22px;
+            border-radius: 9px;
+            border: 1px solid var(--border);
+            background: var(--panel-raised);
+            color: var(--text);
             cursor: pointer;
-            transition: all 0.2s;
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            transition: transform .12s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease;
+            direction: ltr;
         }
-        .btn:hover {
-            background: #30363d;
-            border-color: #58a6ff;
-            color: #ffffff;
+
+        .btn:hover { transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+
+        .btn:focus-visible {
+            outline: 2px solid var(--text);
+            outline-offset: 2px;
         }
-        .btn-primary {
-            background: #238636;
-            border-color: #2ea043;
-            color: #ffffff;
+
+        .btn--primary {
+            background: linear-gradient(180deg, #ffc978, #e89a3a);
+            color: #1a1206;
+            border-color: #ffb454;
         }
-        .btn-primary:hover {
-            background: #2ea043;
-            border-color: #3fb950;
+        .btn--primary:hover { box-shadow: 0 0 0 4px var(--amber-soft); }
+
+        .btn--secondary { border-color: rgba(94,234,212,.5); color: var(--cyan); }
+        .btn--secondary:hover { background: var(--cyan-soft); box-shadow: 0 0 0 4px var(--cyan-soft); }
+
+        .btn--danger { border-color: rgba(255,107,107,.5); color: var(--red); }
+        .btn--danger:hover { background: var(--red-soft); box-shadow: 0 0 0 4px var(--red-soft); }
+
+        /* ---------- Status bar ---------- */
+        .status-bar {
+            font-family: var(--mono);
+            font-size: 12.5px;
+            color: var(--text-dim);
+            background: var(--panel-raised);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 11px 14px;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            direction: ltr;
+            text-align: left;
         }
-        .btn-danger {
-            background: #da3633;
-            border-color: #f85149;
-            color: #ffffff;
+
+        .status-bar::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            background: currentColor;
+            box-shadow: 0 0 7px currentColor;
         }
-        .btn-danger:hover {
-            background: #f85149;
-            border-color: #ff7b72;
-        }
-        .btn-secondary {
-            background: #1f6feb;
-            border-color: #58a6ff;
-            color: #ffffff;
-        }
-        .btn-secondary:hover {
-            background: #388bfd;
-        }
-        .stats {
-            font-size: 13px;
-            color: #8b949e;
-            padding: 8px 0 0 0;
-            text-align: right;
-        }
+
+        /* ---------- Footer ---------- */
         .footer {
-            margin-top: 20px;
-            font-size: 12px;
-            color: #484f58;
+            margin-top: 22px;
+            font-size: 11.5px;
+            color: var(--text-faint);
             text-align: center;
-            border-top: 1px solid #21262d;
-            padding-top: 15px;
+            border-top: 1px solid var(--border-soft);
+            padding-top: 14px;
+            font-family: var(--mono);
+            direction: ltr;
         }
-        .badge {
-            background: #1f6feb;
-            padding: 2px 10px;
-            border-radius: 30px;
-            font-size: 12px;
-            color: white;
+
+        .footer a { color: var(--text-dim); text-decoration: none; }
+        .footer a:hover { color: var(--cyan); }
+
+        @media (prefers-reduced-motion: reduce) {
+            .signal-divider path { animation: none; }
         }
-        .badge-warning {
-            background: #d29922;
-        }
+
         @media (max-width: 600px) {
-            .container { padding: 15px; }
-            .btn { padding: 8px 16px; font-size: 13px; }
-            textarea { height: 150px; }
+            .console { padding: 20px; }
+            .btn { padding: 10px 16px; font-size: 11.5px; flex: 1 1 auto; justify-content: center; }
+            textarea { height: 160px; }
+            h1 { font-size: 19px; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>
-            <span>⚡ VPN Link Converter</span>
-            <span class="badge">CS + FM</span>
-            <span class="badge badge-warning">FP=unsafe</span>
-        </h1>
-        <div class="grid">
-            <div>
-                <div class="label-row">
-                    <label for="inputLinks">📥 کانفیگ های ورودی (هر خط یک لینک)</label>
-                    <span id="inputCount">۰ لینک</span>
+    <div class="console">
+        <div class="console__header">
+            <div class="header__top">
+                <h1>پنل مبدل VLESS / Trojan <span class="eyebrow">SIGNAL BENCH</span></h1>
+                <div class="header__badges">
+                    <span class="chip chip--info">CS + FM</span>
+                    <span class="chip chip--warn">FP = unsafe</span>
                 </div>
-                <textarea id="inputLinks" placeholder="مثال:&#10;vless://uuid@domain.com:80?path=/...&amp;type=ws#Name&#10;trojan://password@ip:443?security=tls&amp;type=ws#Name"></textarea>
             </div>
-            <div class="actions">
-                <button class="btn btn-primary" id="convertBtn">🚀 تبدیل + </button>
-                <button class="btn btn-secondary" id="copyBtn">📋 کپی خروجی</button>
-                <button class="btn btn-danger" id="clearBtn">🗑️ پاک کردن همه</button>
-            </div>
-            <div>
-                <div class="label-row">
-                    <label for="outputLinks">📤 کانفیگ های خروجی </label>
-                    <span id="outputCount">۰ لینک</span>
-                </div>
-                <textarea class="output" id="outputLinks" readonly placeholder="کانفیگ هایتبدیل‌شده با نام‌های جدید نمایش داده می‌شوند..."></textarea>
-            </div>
-            <div class="stats" id="statusMessage">✅ آمادهٔ تبدیل</div>
+            <p class="sub">لینک‌های VLESS و Trojan را وارد کن؛ پارامترهای cs، fm و fp روی هرکدام اعمال می‌شود و هر لینک با یک نام جدید و شماره‌دار خروجی گرفته می‌شود.</p>
         </div>
+
+        <div class="grid">
+            <div class="channel channel--in">
+                <div class="channel__label-row">
+                    <label for="inputLinks" class="channel__label"><span class="channel__tag">CH.01</span> کانفیگ‌های ورودی</label>
+                    <span id="inputCount" class="readout">۰ لینک</span>
+                </div>
+                <div class="field-frame">
+                    <textarea id="inputLinks" placeholder="مثال:&#10;vless://uuid@domain.com:80?path=/...&amp;type=ws#Name&#10;trojan://password@ip:443?security=tls&amp;type=ws#Name"></textarea>
+                </div>
+            </div>
+
+            <svg class="signal-divider" viewBox="0 0 600 26" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M0,13 Q25,3 50,13 T100,13 T150,13 T200,13 T250,13 T300,13 T350,13 T400,13 T450,13 T500,13 T550,13 T600,13" />
+            </svg>
+
+            <div class="actions">
+                <button class="btn btn--primary" id="convertBtn">🚀 تبدیل</button>
+                <button class="btn btn--secondary" id="copyBtn">📋 کپی خروجی</button>
+                <button class="btn btn--danger" id="clearBtn">🗑️ پاک کردن همه</button>
+            </div>
+
+            <div class="channel channel--out">
+                <div class="channel__label-row">
+                    <label for="outputLinks" class="channel__label"><span class="channel__tag">CH.02</span> کانفیگ‌های خروجی</label>
+                    <span id="outputCount" class="readout">۰ لینک</span>
+                </div>
+                <div class="field-frame">
+                    <textarea class="output" id="outputLinks" readonly placeholder="کانفیگ‌های تبدیل‌شده با نام‌های جدید اینجا نمایش داده می‌شوند..."></textarea>
+                </div>
+            </div>
+
+            <div class="status-bar" id="statusMessage">✅ آمادهٔ تبدیل</div>
+        </div>
+
         <div class="footer">
-            <a href="https://nodeoof.github.io/v2rayconfigtoPattNG/" target="_blank" style="color: #58a6ff; text-decoration: none;">https://nodeoof.github.io/v2rayconfigtoPattNG/</a>
+            <a href="https://nodeoof.github.io/v2rayconfigtoPattNG/" target="_blank">https://nodeoof.github.io/v2rayconfigtoPattNG/</a>
         </div>
     </div>
 
