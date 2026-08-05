@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VLESS / Trojan Converter - CS & FM & FP=unsafe + Rename</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: #0d1117;
+            color: #e6edf3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: #161b22;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            border: 1px solid #30363d;
+        }
+        h1 {
+            font-size: 24px;
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: #f0f6fc;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .sub {
+            color: #8b949e;
+            font-size: 14px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #21262d;
+            padding-bottom: 15px;
+        }
+        .grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: #c9d1d9;
+            font-size: 14px;
+        }
+        .label-row span {
+            background: #21262d;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #8b949e;
+        }
+        textarea {
+            width: 100%;
+            height: 220px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            color: #e6edf3;
+            padding: 15px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            outline: none;
+            transition: border 0.2s;
+            line-height: 1.6;
+        }
+        textarea:focus {
+            border-color: #58a6ff;
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+        }
+        textarea.output {
+            height: 280px;
+            background: #0d1117;
+        }
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 10px 0 5px;
+        }
+        .btn {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn:hover {
+            background: #30363d;
+            border-color: #58a6ff;
+            color: #ffffff;
+        }
+        .btn-primary {
+            background: #238636;
+            border-color: #2ea043;
+            color: #ffffff;
+        }
+        .btn-primary:hover {
+            background: #2ea043;
+            border-color: #3fb950;
+        }
+        .btn-danger {
+            background: #da3633;
+            border-color: #f85149;
+            color: #ffffff;
+        }
+        .btn-danger:hover {
+            background: #f85149;
+            border-color: #ff7b72;
+        }
+        .btn-secondary {
+            background: #1f6feb;
+            border-color: #58a6ff;
+            color: #ffffff;
+        }
+        .btn-secondary:hover {
+            background: #388bfd;
+        }
+        .stats {
+            font-size: 13px;
+            color: #8b949e;
+            padding: 8px 0 0 0;
+            text-align: right;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #484f58;
+            text-align: center;
+            border-top: 1px solid #21262d;
+            padding-top: 15px;
+        }
+        .badge {
+            background: #1f6feb;
+            padding: 2px 10px;
+            border-radius: 30px;
+            font-size: 12px;
+            color: white;
+        }
+        .badge-warning {
+            background: #d29922;
+        }
+        .badge-rename {
+            background: #9e6a03;
+        }
+        @media (max-width: 600px) {
+            .container { padding: 15px; }
+            .btn { padding: 8px 16px; font-size: 13px; }
+            textarea { height: 150px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>
+            <span>⚡ VPN Link Converter</span>
+            <span class="badge">CS + FM</span>
+            <span class="badge badge-warning">FP=unsafe</span>
+            <span class="badge badge-rename">@hajali_o - N</span>
+        </h1>
+        <div class="grid">
+            <div>
+                <div class="label-row">
+                    <label for="inputLinks">📥 لینک‌های ورودی (هر خط یک لینک)</label>
+                    <span id="inputCount">۰ لینک</span>
+                </div>
+                <textarea id="inputLinks" placeholder="مثال:&#10;vless://uuid@domain.com:80?path=/...&amp;type=ws#Name&#10;trojan://password@ip:443?security=tls&amp;type=ws#Name"></textarea>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-primary" id="convertBtn">🚀 تبدیل + تغییر نام</button>
+                <button class="btn btn-secondary" id="copyBtn">📋 کپی خروجی</button>
+                <button class="btn btn-danger" id="clearBtn">🗑️ پاک کردن همه</button>
+                <button class="btn" id="sampleBtn">📌 درج نمونه</button>
+            </div>
+
+            <div>
+                <div class="label-row">
+                    <label for="outputLinks">📤 لینک‌های خروجی (تبدیل‌شده با نام جدید)</label>
+                    <span id="outputCount">۰ لینک</span>
+                </div>
+                <textarea class="output" id="outputLinks" readonly placeholder="لینک‌های تبدیل‌شده با نام‌های جدید نمایش داده می‌شوند..."></textarea>
+            </div>
+            <div class="stats" id="statusMessage">✅ آمادهٔ تبدیل</div>
+        </div>
+        <div class="footer">
+            پارامترهای اضافه/بازنویسی‌شده: <code>cs</code>، <code>fm</code>، <code>fp=unsafe</code> و نام‌گذاری مجدد با <code>@hajali_o - شماره</code>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // مقادیر ثابت
+            const CS_VALUE = 'TLS_AES_256_GCM_SHA384%3ATLS_CHACHA20_POLY1305_SHA256%3ATLS_AES_128_GCM_SHA256%3ATLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384%3ATLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384%3ATLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256%3ATLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256%3ATLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256%3ATLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256%3ATLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA%3ATLS_ECDHE_RSA_WITH_AES_256_CBC_SHA%3ATLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256%3ATLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256';
+            const FM_VALUE = '%7B%22tcp%22%3A%20%5B%7B%22type%22%3A%20%22fragment%22%2C%20%22settings%22%3A%20%7B%22packets%22%3A%20%22tlshello%22%2C%20%22lengths%22%3A%20%5B%225%22%2C%2294%22%2C%20%221%22%5D%2C%20%22delays%22%3A%20%5B%220%22%5D%2C%20%22maxSplit%22%3A%20%220%22%7D%7D%2C%7B%22type%22%3A%20%22fragment%22%2C%20%22settings%22%3A%20%7B%22packets%22%3A%20%221-1%22%2C%20%22lengths%22%3A%20%5B%22109%22%2C%20%221%22%5D%2C%20%22delays%22%3A%20%5B%221%22%5D%2C%20%22maxSplit%22%3A%20%22355%22%7D%7D%5D%7D';
+            const FP_VALUE = 'unsafe';
+            const NAME_PREFIX = '@hajali_o - ';
+
+            // عناصر DOM
+            const inputText = document.getElementById('inputLinks');
+            const outputText = document.getElementById('outputLinks');
+            const convertBtn = document.getElementById('convertBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const sampleBtn = document.getElementById('sampleBtn');
+            const inputCount = document.getElementById('inputCount');
+            const outputCount = document.getElementById('outputCount');
+            const statusMsg = document.getElementById('statusMessage');
+
+            function countValidLinks(text) {
+                if (!text.trim()) return 0;
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                let count = 0;
+                for (let line of lines) {
+                    if (line.startsWith('vless://') || line.startsWith('trojan://')) {
+                        count++;
+                    }
+                }
+                return count;
+            }
+
+            function convertLinks(text) {
+                const lines = text.split('\n');
+                const results = [];
+                let validIndex = 0; // شمارنده برای نام‌گذاری فقط لینک‌های معتبر
+
+                for (let line of lines) {
+                    const originalLine = line;
+                    const trimmed = line.trim();
+
+                    if (trimmed === '') {
+                        results.push('');
+                        continue;
+                    }
+
+                    if (!trimmed.startsWith('vless://') && !trimmed.startsWith('trojan://')) {
+                        results.push(originalLine);
+                        continue;
+                    }
+
+                    try {
+                        // شمارنده را افزایش بده (برای این لینک معتبر)
+                        validIndex++;
+
+                        let base, queryAndHash = '';
+                        const firstQMark = trimmed.indexOf('?');
+                        if (firstQMark === -1) {
+                            base = trimmed;
+                        } else {
+                            base = trimmed.substring(0, firstQMark);
+                            queryAndHash = trimmed.substring(firstQMark + 1);
+                        }
+
+                        let query = '';
+                        let hash = '';
+                        const hashIndex = queryAndHash.indexOf('#');
+                        if (hashIndex === -1) {
+                            query = queryAndHash;
+                        } else {
+                            query = queryAndHash.substring(0, hashIndex);
+                            hash = queryAndHash.substring(hashIndex); // شامل #
+                        }
+
+                        // پارس کردن پارامترها
+                        const params = new Map();
+                        if (query) {
+                            const pairs = query.split('&');
+                            for (let pair of pairs) {
+                                const eqIndex = pair.indexOf('=');
+                                if (eqIndex === -1) {
+                                    params.set(pair, '');
+                                } else {
+                                    const key = pair.substring(0, eqIndex);
+                                    const value = pair.substring(eqIndex + 1);
+                                    if (key) {
+                                        params.set(key, value);
+                                    }
+                                }
+                            }
+                        }
+
+                        // اعمال مقادیر جدید (بازنویسی)
+                        params.set('cs', CS_VALUE);
+                        params.set('fm', FM_VALUE);
+                        params.set('fp', FP_VALUE);
+
+                        // ساخت query جدید
+                        const newPairs = [];
+                        for (let [key, value] of params) {
+                            newPairs.push(key + '=' + value);
+                        }
+                        const newQuery = newPairs.join('&');
+
+                        // ساخت نام جدید با شماره‌گذاری
+                        const newName = NAME_PREFIX + validIndex;
+
+                        // لینک نهایی: base + ? + query + # + name
+                        let newLink = base + '?' + newQuery + '#' + newName;
+
+                        results.push(newLink);
+                    } catch (e) {
+                        // در صورت خطا، خط اصلی برگردانده شود
+                        results.push(originalLine);
+                        console.warn('Error converting line:', originalLine, e);
+                    }
+                }
+
+                return { lines: results, count: validIndex };
+            }
+
+            function updateStats(input, output) {
+                const inCount = countValidLinks(input);
+                inputCount.textContent = inCount + ' لینک';
+
+                const outLines = output.split('\n').filter(l => l.trim() !== '');
+                let outCount = 0;
+                for (let line of outLines) {
+                    if (line.startsWith('vless://') || line.startsWith('trojan://')) {
+                        outCount++;
+                    }
+                }
+                outputCount.textContent = outCount + ' لینک';
+            }
+
+            function performConversion() {
+                const input = inputText.value;
+                if (!input.trim()) {
+                    statusMsg.textContent = '⚠️ لطفاً لینک‌هایی برای تبدیل وارد کنید.';
+                    statusMsg.style.color = '#f85149';
+                    return;
+                }
+
+                const result = convertLinks(input);
+                outputText.value = result.lines.join('\n');
+                updateStats(input, outputText.value);
+
+                if (result.count > 0) {
+                    statusMsg.textContent = `✅ ${result.count} لینک با موفقیت تبدیل و نام‌گذاری شدند (fp=unsafe).`;
+                    statusMsg.style.color = '#3fb950';
+                } else {
+                    statusMsg.textContent = '⚠️ هیچ لینک معتبری (VLESS/Trojan) یافت نشد.';
+                    statusMsg.style.color = '#f85149';
+                }
+            }
+
+            function copyOutput() {
+                const text = outputText.value;
+                if (!text.trim()) {
+                    statusMsg.textContent = '⚠️ خروجی برای کپی وجود ندارد.';
+                    statusMsg.style.color = '#f85149';
+                    return;
+                }
+                navigator.clipboard.writeText(text).then(() => {
+                    statusMsg.textContent = '✅ خروجی با موفقیت کپی شد!';
+                    statusMsg.style.color = '#3fb950';
+                }).catch(() => {
+                    outputText.select();
+                    document.execCommand('copy');
+                    statusMsg.textContent = '✅ خروجی کپی شد (روش جایگزین).';
+                    statusMsg.style.color = '#3fb950';
+                });
+            }
+
+            function clearAll() {
+                inputText.value = '';
+                outputText.value = '';
+                inputCount.textContent = '۰ لینک';
+                outputCount.textContent = '۰ لینک';
+                statusMsg.textContent = '🗑️ همه چیز پاک شد.';
+                statusMsg.style.color = '#8b949e';
+            }
+
+            function insertSample() {
+                const sample = `vless://`;
+                inputText.value = sample;
+                statusMsg.textContent = '📌 نمونه درج شد. حالا روی "تبدیل" کلیک کنید تا fp=unsafe و نام‌های جدید اعمال شوند.';
+                statusMsg.style.color = '#58a6ff';
+                updateStats(sample, '');
+            }
+
+            // اتصال رویدادها
+            convertBtn.addEventListener('click', performConversion);
+            copyBtn.addEventListener('click', copyOutput);
+            clearBtn.addEventListener('click', clearAll);
+            sampleBtn.addEventListener('click', insertSample);
+
+            inputText.addEventListener('input', function() {
+                const count = countValidLinks(this.value);
+                inputCount.textContent = count + ' لینک';
+                if (!outputText.value) {
+                    outputCount.textContent = '۰ لینک';
+                }
+            });
+
+            updateStats('', '');
+            statusMsg.textContent = '💡 لینک‌ها را وارد کرده و روی "تبدیل" کلیک کنید (fp=unsafe + نام‌گذاری جدید).';
+            statusMsg.style.color = '#8b949e';
+        })();
+    </script>
+</body>
+</html>
