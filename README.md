@@ -1,4 +1,4 @@
-# پنل سیگنال — مبدل VLESS / Trojan / Shadowsocks
+# پنل v2rayconfigtoPattNG — مبدل VLESS / Trojan / Shadowsocks
 
 <div dir="rtl" align="right">
 
@@ -6,7 +6,7 @@
 
 این ابزار به‌صورت کاملاً محلی (Client‑Side) در مرورگر شما اجرا می‌شود و هیچ داده‌ای به سرور ارسال نمی‌کند.
 
-![پیش‌نمایش پنل](preview.png)
+![پیش‌نمایش پنل](preview\preview.png)
 
 ---
 
