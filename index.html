@@ -67,7 +67,6 @@
             opacity: .6;
         }
 
-        /* ---------- Header ---------- */
         .console__header { margin-bottom: 26px; }
 
         .header__top {
@@ -139,7 +138,6 @@
             border-bottom: 1px dashed var(--border);
         }
 
-        /* ---------- Layout ---------- */
         .grid { display: flex; flex-direction: column; gap: 18px; }
 
         .channel__label-row {
@@ -184,7 +182,6 @@
             direction: ltr;
         }
 
-        /* ---------- Field frame (oscilloscope-style corners) ---------- */
         .field-frame {
             position: relative;
             padding: 6px;
@@ -234,7 +231,6 @@
         textarea.output { height: 260px; }
         textarea.output:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-soft); }
 
-        /* ---------- Signal divider ---------- */
         .signal-divider {
             width: 100%;
             height: 26px;
@@ -251,7 +247,6 @@
 
         @keyframes drift { to { stroke-dashoffset: -180; } }
 
-        /* ---------- Controls ---------- */
         .actions {
             display: flex;
             flex-wrap: wrap;
@@ -298,7 +293,6 @@
         .btn--danger { border-color: rgba(255,107,107,.5); color: var(--red); }
         .btn--danger:hover { background: var(--red-soft); box-shadow: 0 0 0 4px var(--red-soft); }
 
-        /* ---------- Status bar ---------- */
         .status-bar {
             font-family: var(--mono);
             font-size: 12.5px;
@@ -324,7 +318,6 @@
             box-shadow: 0 0 7px currentColor;
         }
 
-        /* ---------- Footer ---------- */
         .footer {
             margin-top: 22px;
             font-size: 11.5px;
@@ -382,6 +375,7 @@
             <div class="actions">
                 <button class="btn btn--primary" id="convertBtn">🚀 تبدیل</button>
                 <button class="btn btn--secondary" id="copyBtn">📋 کپی خروجی</button>
+                <button class="btn btn--secondary" id="openAppBtn">📱 افزودن به PattNG</button>
                 <button class="btn btn--danger" id="clearBtn">🗑️ پاک کردن همه</button>
             </div>
 
@@ -418,6 +412,7 @@
             const convertBtn = document.getElementById('convertBtn');
             const copyBtn = document.getElementById('copyBtn');
             const clearBtn = document.getElementById('clearBtn');
+            const openAppBtn = document.getElementById('openAppBtn');
             const inputCount = document.getElementById('inputCount');
             const outputCount = document.getElementById('outputCount');
             const statusMsg = document.getElementById('statusMessage');
@@ -449,7 +444,6 @@
                         continue;
                     }
 
-                    // پردازش فقط خطوطی که با vless، trojan یا ss شروع می‌شوند
                     const isVless = trimmed.startsWith('vless://');
                     const isTrojan = trimmed.startsWith('trojan://');
                     const isSS = trimmed.startsWith('ss://');
@@ -477,10 +471,9 @@
                             query = queryAndHash;
                         } else {
                             query = queryAndHash.substring(0, hashIndex);
-                            hash = queryAndHash.substring(hashIndex); // شامل #
+                            hash = queryAndHash.substring(hashIndex);
                         }
 
-                        // پارس کردن پارامترهای موجود
                         const params = new Map();
                         if (query) {
                             const pairs = query.split('&');
@@ -498,18 +491,14 @@
                             }
                         }
 
-                        // اعمال تنظیمات بر اساس نوع پروتکل
                         if (isVless || isTrojan) {
-                            // برای VLESS و Trojan: cs، fm و fp را اضافه/بازنویسی کن
                             params.set('cs', CS_VALUE);
                             params.set('fm', FM_VALUE);
                             params.set('fp', FP_VALUE);
                         } else if (isSS) {
-                            // برای Shadowsocks: فقط fm را اضافه کن (cs و fp معنی ندارند)
                             params.set('fm', FM_VALUE);
-                            // در صورت وجود cs یا fp، آنها را حذف می‌کنیم (اختیاری)
-                            // params.delete('cs');
-                            // params.delete('fp');
+                            params.delete('cs');
+                            params.delete('fp');
                         }
 
                         const newPairs = [];
@@ -594,6 +583,35 @@
                 statusMsg.style.color = '#8b949e';
             }
 
+            // --- دکمه‌ی جدید: ارسال مستقیم خروجی به PattNG ---
+            openAppBtn.addEventListener('click', function() {
+                const text = outputText.value;
+                if (!text.trim()) {
+                    statusMsg.textContent = '⚠️ خروجی برای ارسال به PattNG وجود ندارد. ابتدا کانفیگ‌ها را تبدیل کنید.';
+                    statusMsg.style.color = '#f85149';
+                    return;
+                }
+
+                try {
+                    // تبدیل متن خروجی به Base64 (برای پشتیبانی از UTF-8)
+                    const utf8Bytes = unescape(encodeURIComponent(text));
+                    const base64 = btoa(utf8Bytes);
+
+                    // ساخت URI با داده‌های Base64 (بسیاری از اپ‌های V2Ray این فرمت را پشتیبانی می‌کنند)
+                    const uri = `v2rayng://install-config?url=data:text/plain;base64,${base64}`;
+
+                    // هدایت مرورگر به سمت برنامه
+                    window.location.href = uri;
+
+                    statusMsg.textContent = `📱 در حال ارسال ${countValidLinks(text)} کانفیگ به PattNG...`;
+                    statusMsg.style.color = '#3fb950';
+                } catch (e) {
+                    statusMsg.textContent = '⚠️ خطا در کدگذاری خروجی: ' + e.message;
+                    statusMsg.style.color = '#f85149';
+                }
+            });
+
+            // رویدادهای اصلی
             convertBtn.addEventListener('click', performConversion);
             copyBtn.addEventListener('click', copyOutput);
             clearBtn.addEventListener('click', clearAll);
@@ -607,7 +625,7 @@
             });
 
             updateStats('', '');
-            statusMsg.textContent = '💡 لینک‌ها را وارد کرده و روی "تبدیل" کلیک کنید (VLESS/Trojan/Shadowsocks: cs+fm+fp، SS: فقط fm).';
+            statusMsg.textContent = '💡 لینک‌ها را وارد کرده و روی "تبدیل" کلیک کنید. سپس با "افزودن به PattNG" مستقیماً وارد برنامه کنید.';
             statusMsg.style.color = '#8b949e';
         })();
     </script>
