@@ -6,7 +6,7 @@
 
 این ابزار به‌صورت کاملاً محلی (Client‑Side) در مرورگر شما اجرا می‌شود و هیچ داده‌ای به سرور ارسال نمی‌کند.
 
-![پیش‌نمایش پنل](preview\preview.png)
+![پیش‌نمایش پنل](https://github.com/NodeOOF/v2rayconfigtoPattNG/blob/main/preview/preview.png)
 
 ---
 
