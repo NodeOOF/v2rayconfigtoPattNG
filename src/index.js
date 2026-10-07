@@ -1,6 +1,5 @@
 // ============================================================
-// Cloudflare Worker - فقط کرون تریگر
-// هیچ endpoint عمومی نداره. فقط configs.txt رو توی گیت‌هاب آپدیت می‌کنه.
+// Cloudflare Worker - Config Converter
 // ============================================================
 
 const CS_VALUE = 'TLS_AES_256_GCM_SHA384%3ATLS_CHACHA20_POLY1305_SHA256%3ATLS_AES_128_GCM_SHA256%3ATLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384%3ATLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384%3ATLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256%3ATLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256%3ATLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256%3ATLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256%3ATLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA%3ATLS_ECDHE_RSA_WITH_AES_256_CBC_SHA%3ATLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256%3ATLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256';
@@ -112,6 +111,7 @@ function convertText(text) {
 
 // ============ GitHub API ============
 async function getFileSha(env) {
+  if (!env.GITHUB_TOKEN) throw new Error('GITHUB_TOKEN is not set');
   const url = `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/contents/${env.GITHUB_PATH}?ref=${env.GITHUB_BRANCH}`;
   const res = await fetch(url, {
     headers: {
@@ -159,6 +159,10 @@ async function pushFile(env, content, sha) {
 
 // ============ منطق اصلی ============
 async function runConversion(env) {
+  if (!env.SOURCE_URL) throw new Error('SOURCE_URL is not set');
+  if (!env.GITHUB_TOKEN) throw new Error('GITHUB_TOKEN is not set');
+  if (!env.GITHUB_OWNER || !env.GITHUB_REPO) throw new Error('GitHub config is incomplete');
+
   console.log('[1/4] Fetching source...');
   const srcRes = await fetch(env.SOURCE_URL, {
     headers: { 'User-Agent': 'cf-worker-config-converter' },
@@ -176,16 +180,86 @@ async function runConversion(env) {
   const result = await pushFile(env, output, sha);
   console.log(`[4/4] Pushed. Commit: ${result.commit?.sha}`);
 
-  return { count, commit: result.commit?.sha };
+  return { count, commit: result.commit?.sha, at: new Date().toISOString() };
 }
 
-// ============ Entry (فقط scheduled، بدون fetch) ============
+// ============ Entry ============
 export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil(
       runConversion(env)
         .then(r => console.log(`✅ Done: ${r.count} configs, commit ${r.commit}`))
-        .catch(err => console.error('❌ Scheduled failed:', err))
+        .catch(err => {
+          console.error('❌ Scheduled failed:', err.message);
+          console.error(err.stack);
+        })
     );
+  },
+
+  // ★★★ این بخش قبلاً نبود — حالا اضافه شده ★★★
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+
+    // favicon — نادیده بگیر
+    if (url.pathname === '/favicon.ico') {
+      return new Response(null, { status: 204 });
+    }
+
+    // صفحه اصلی
+    if (url.pathname === '/' || url.pathname === '') {
+      return new Response(
+        `🔧 Config Converter Worker\n` +
+        `====================================\n\n` +
+        `Status: ✅ Running\n` +
+        `Cron:   0 */6 * * *  (هر ۶ ساعت)\n` +
+        `Source: ${env.SOURCE_URL || 'not set'}\n` +
+        `GitHub: ${env.GITHUB_OWNER || '?'}/${env.GITHUB_REPO || '?'}/${env.GITHUB_PATH || '?'}\n\n` +
+        `Endpoints:\n` +
+        `  GET /                    → این صفحه\n` +
+        `  GET /run?token=SECRET    → اجرای دستی تبدیل\n` +
+        `  GET /status              → وضعیت\n`,
+        { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
+      );
+    }
+
+    // /run — اجرای دستی
+    if (url.pathname === '/run') {
+      const token = url.searchParams.get('token');
+      if (env.RUN_TOKEN && token !== env.RUN_TOKEN) {
+        return new Response('Unauthorized', { status: 401 });
+      }
+      try {
+        const result = await runConversion(env);
+        return new Response(JSON.stringify(result, null, 2), {
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message, stack: err.stack }, null, 2), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        });
+      }
+    }
+
+    // /status
+    if (url.pathname === '/status') {
+      return new Response(JSON.stringify({
+        ok: true,
+        time: new Date().toISOString(),
+        env: {
+          GITHUB_OWNER: env.GITHUB_OWNER,
+          GITHUB_REPO: env.GITHUB_REPO,
+          GITHUB_PATH: env.GITHUB_PATH,
+          GITHUB_BRANCH: env.GITHUB_BRANCH,
+          SOURCE_URL: env.SOURCE_URL,
+          has_github_token: !!env.GITHUB_TOKEN,
+          has_run_token: !!env.RUN_TOKEN,
+        },
+      }, null, 2), {
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      });
+    }
+
+    return new Response('Not Found', { status: 404 });
   },
 };

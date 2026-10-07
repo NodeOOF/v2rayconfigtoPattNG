@@ -9,6 +9,9 @@
 ![پیش‌نمایش پنل](https://github.com/NodeOOF/v2rayconfigtoPattNG/blob/main/preview/preview.png)
 
 ---
+## لینک متصل شدن
+https://raw.githubusercontent.com/NodeOOF/v2rayconfigtoPattNG/refs/heads/main/configs.txt
+
 
 ## 🚀 ویژگی‌ها
 
