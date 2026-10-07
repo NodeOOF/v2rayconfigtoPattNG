@@ -280,6 +280,12 @@
             outline-offset: 2px;
         }
 
+        .btn:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .btn--primary {
             background: linear-gradient(180deg, #ffc978, #e89a3a);
             color: #1a1206;
@@ -292,6 +298,9 @@
 
         .btn--danger { border-color: rgba(255,107,107,.5); color: var(--red); }
         .btn--danger:hover { background: var(--red-soft); box-shadow: 0 0 0 4px var(--red-soft); }
+
+        .btn--ghost { border-color: rgba(255,180,84,.4); color: var(--amber); }
+        .btn--ghost:hover { background: var(--amber-soft); box-shadow: 0 0 0 4px var(--amber-soft); }
 
         .status-bar {
             font-family: var(--mono);
@@ -331,6 +340,15 @@
 
         .footer a { color: var(--text-dim); text-decoration: none; }
         .footer a:hover { color: var(--cyan); }
+
+        .last-update {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--text-faint);
+            text-align: center;
+            margin-top: 8px;
+            direction: ltr;
+        }
 
         @media (prefers-reduced-motion: reduce) {
             .signal-divider path { animation: none; }
@@ -373,6 +391,7 @@
             </svg>
 
             <div class="actions">
+                <button class="btn btn--ghost" id="loadFromGithubBtn">⬇️ بارگیری از گیت‌هاب</button>
                 <button class="btn btn--primary" id="convertBtn">🚀 تبدیل</button>
                 <button class="btn btn--secondary" id="copyBtn">📋 کپی خروجی</button>
                 <button class="btn btn--secondary" id="openAppBtn">📱 افزودن به PattNG</button>
@@ -394,23 +413,27 @@
 
         <div class="footer">
             <a href="https://nodeoof.github.io/v2rayconfigtoPattNG/" target="_blank">https://nodeoof.github.io/v2rayconfigtoPattNG/</a>
+            <div class="last-update" id="lastUpdate"></div>
         </div>
     </div>
 
     <script>
         (function() {
 
+            // ============================================================
             // مقادیر ثابت
+            // ============================================================
             const CS_VALUE = 'TLS_AES_256_GCM_SHA384%3ATLS_CHACHA20_POLY1305_SHA256%3ATLS_AES_128_GCM_SHA256%3ATLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384%3ATLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384%3ATLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256%3ATLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256%3ATLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256%3ATLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256%3ATLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA%3ATLS_ECDHE_RSA_WITH_AES_256_CBC_SHA%3ATLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256%3ATLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256';
             const FM_VALUE = '%7B%22tcp%22%3A%5B%7B%22type%22%3A%22fragment%22%2C%22settings%22%3A%7B%22packets%22%3A%22tlshello%22%2C%22lengths%22%3A%5B%22100-250%22%5D%2C%22delays%22%3A%5B%220%22%5D%2C%22maxSplit%22%3A%22200%22%7D%7D%2C%7B%22type%22%3A%22fragment%22%2C%22settings%22%3A%7B%22packets%22%3A%221-3%22%2C%22lengths%22%3A%5B%22200-400%22%5D%2C%22delays%22%3A%5B%220%22%5D%2C%22maxSplit%22%3A%22350%22%7D%7D%5D%2C%22udp%22%3A%5B%7B%22type%22%3A%22noise%22%2C%22settings%22%3A%7B%22reset%22%3A%2230%22%2C%22noise%22%3A%5B%7B%22rand%22%3A%22300-500%22%2C%22delay%22%3A%220%22%7D%2C%7B%22rand%22%3A%22300-500%22%2C%22delay%22%3A%220%22%7D%5D%7D%7D%5D%7D';
             const FP_VALUE = 'unsafe';
             const NAME_PREFIX = 'github.com/NodeOOF - ';
 
-            // ============================================================
-            // توابع تبدیل IPv4 به IPv6 (رنج کلودفلر 2606:4700::/32)
-            // ============================================================
+            // آدرس فایل کانفیگ‌های خودکار (خروجی ورکر کلودفلر)
+            const AUTO_CONFIGS_URL = 'configs.txt';
 
-            // بررسی اینکه رشته یک IPv4 معتبر است
+            // ============================================================
+            // توابع IPv4 → IPv6
+            // ============================================================
             function isIPv4(str) {
                 if (typeof str !== 'string') return false;
                 const parts = str.split('.');
@@ -418,8 +441,6 @@
                 return parts.every(p => /^\d{1,3}$/.test(p) && parseInt(p, 10) >= 0 && parseInt(p, 10) <= 255);
             }
 
-            // تبدیل IPv4 به IPv6 در رنج کلودفلر
-            // مثال: 104.19.234.246 → 2606:4700::6813:eaf6
             function ipv4ToIPv6(ipv4) {
                 const parts = ipv4.split('.').map(Number);
                 const hex = parts.map(p => p.toString(16).padStart(2, '0')).join('');
@@ -427,18 +448,23 @@
             }
 
             // ============================================================
-
             // عناصر DOM
+            // ============================================================
             const inputText = document.getElementById('inputLinks');
             const outputText = document.getElementById('outputLinks');
             const convertBtn = document.getElementById('convertBtn');
             const copyBtn = document.getElementById('copyBtn');
             const clearBtn = document.getElementById('clearBtn');
             const openAppBtn = document.getElementById('openAppBtn');
+            const loadFromGithubBtn = document.getElementById('loadFromGithubBtn');
             const inputCount = document.getElementById('inputCount');
             const outputCount = document.getElementById('outputCount');
             const statusMsg = document.getElementById('statusMessage');
+            const lastUpdate = document.getElementById('lastUpdate');
 
+            // ============================================================
+            // شمارش لینک‌های معتبر
+            // ============================================================
             function countValidLinks(text) {
                 if (!text.trim()) return 0;
                 const lines = text.split('\n').filter(line => line.trim() !== '');
@@ -452,6 +478,9 @@
                 return count;
             }
 
+            // ============================================================
+            // تبدیل لینک‌ها
+            // ============================================================
             function convertLinks(text) {
                 const lines = text.split('\n');
                 const results = [];
@@ -486,9 +515,8 @@
                             queryAndHash = trimmed.substring(firstQMark + 1);
                         }
 
-                        // === تبدیل IPv4 به IPv6 در بخش هاست (بعد از @) ===
+                        // تبدیل IPv4 به IPv6 در بخش هاست (بعد از @)
                         base = base.replace(/@(\[[^\]]+\]|[^:@\/?#]+)(:\d+)?/, (match, host, port) => {
-                            // اگر از قبل IPv6 بود (داخل براکت) دست نزن
                             if (host.startsWith('[')) return match;
                             if (isIPv4(host)) {
                                 return '@[' + ipv4ToIPv6(host) + ']' + (port || '');
@@ -506,7 +534,7 @@
                             hash = queryAndHash.substring(hashIndex);
                         }
 
-                        // === تبدیل IPv4 به IPv6 در پارامترهای query (مثل ech) ===
+                        // تبدیل IPv4 به IPv6 در پارامترهای query (مثل ech)
                         if (query) {
                             query = query.replace(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/g, (ip) => {
                                 return isIPv4(ip) ? ipv4ToIPv6(ip) : ip;
@@ -559,6 +587,9 @@
                 return { lines: results, count: validIndex };
             }
 
+            // ============================================================
+            // آپدیت آمار
+            // ============================================================
             function updateStats(input, output) {
                 const inCount = countValidLinks(input);
                 inputCount.textContent = inCount + ' لینک';
@@ -574,6 +605,9 @@
                 outputCount.textContent = outCount + ' لینک';
             }
 
+            // ============================================================
+            // تبدیل (دکمه اصلی)
+            // ============================================================
             function performConversion() {
                 const input = inputText.value;
                 if (!input.trim()) {
@@ -595,6 +629,9 @@
                 }
             }
 
+            // ============================================================
+            // کپی خروجی
+            // ============================================================
             function copyOutput() {
                 const text = outputText.value;
                 if (!text.trim()) {
@@ -613,6 +650,9 @@
                 });
             }
 
+            // ============================================================
+            // پاک کردن همه
+            // ============================================================
             function clearAll() {
                 inputText.value = '';
                 outputText.value = '';
@@ -622,8 +662,10 @@
                 statusMsg.style.color = '#8b949e';
             }
 
-            // --- دکمه‌ی جدید: ارسال مستقیم خروجی به PattNG ---
-            openAppBtn.addEventListener('click', function() {
+            // ============================================================
+            // ارسال به PattNG
+            // ============================================================
+            function openInApp() {
                 const text = outputText.value;
                 if (!text.trim()) {
                     statusMsg.textContent = '⚠️ خروجی برای ارسال به PattNG وجود ندارد. ابتدا کانفیگ‌ها را تبدیل کنید.';
@@ -643,11 +685,74 @@
                     statusMsg.textContent = '⚠️ خطا در کدگذاری خروجی: ' + e.message;
                     statusMsg.style.color = '#f85149';
                 }
-            });
+            }
 
+            // ============================================================
+            // بارگیری خودکار از گیت‌هاب (configs.txt)
+            // ============================================================
+            async function loadFromGithub() {
+                statusMsg.textContent = '⏳ در حال بارگیری configs.txt از گیت‌هاب...';
+                statusMsg.style.color = '#8b949e';
+                loadFromGithubBtn.disabled = true;
+                const originalLabel = loadFromGithubBtn.innerHTML;
+                loadFromGithubBtn.innerHTML = '⏳ در حال بارگیری...';
+
+                try {
+                    // cache-busting با timestamp
+                    const url = AUTO_CONFIGS_URL + '?t=' + Date.now();
+                    const res = await fetch(url, { cache: 'no-store' });
+
+                    if (!res.ok) {
+                        throw new Error(`HTTP ${res.status} ${res.statusText}`);
+                    }
+
+                    const text = await res.text();
+
+                    if (!text.trim()) {
+                        throw new Error('فایل configs.txt خالی است');
+                    }
+
+                    inputText.value = text;
+                    inputText.dispatchEvent(new Event('input'));
+
+                    const cnt = countValidLinks(text);
+
+                    // نمایش زمان آخرین تغییر فایل (اگر هدر Last-Modified موجود بود)
+                    const lastMod = res.headers.get('last-modified');
+                    if (lastMod) {
+                        const d = new Date(lastMod);
+                        lastUpdate.textContent = '🕒 آخرین به‌روزرسانی: ' +
+                            d.toLocaleString('fa-IR', {
+                                year: 'numeric', month: '2-digit', day: '2-digit',
+                                hour: '2-digit', minute: '2-digit'
+                            });
+                    } else {
+                        lastUpdate.textContent = '🕒 آخرین به‌روزرسانی: ' +
+                            new Date().toLocaleString('fa-IR');
+                    }
+
+                    statusMsg.textContent = `✅ ${cnt} کانفیگ از گیت‌هاب بارگیری شد. حالا روی «تبدیل» بزن.`;
+                    statusMsg.style.color = '#3fb950';
+
+                } catch (e) {
+                    statusMsg.textContent = '⚠️ خطا در بارگیری: ' + e.message +
+                        ' — مطمئن شو ورکر کلودفلر configs.txt را ساخته.';
+                    statusMsg.style.color = '#f85149';
+                    console.error('Load from GitHub failed:', e);
+                } finally {
+                    loadFromGithubBtn.disabled = false;
+                    loadFromGithubBtn.innerHTML = originalLabel;
+                }
+            }
+
+            // ============================================================
+            // رویدادها
+            // ============================================================
             convertBtn.addEventListener('click', performConversion);
             copyBtn.addEventListener('click', copyOutput);
             clearBtn.addEventListener('click', clearAll);
+            openAppBtn.addEventListener('click', openInApp);
+            loadFromGithubBtn.addEventListener('click', loadFromGithub);
 
             inputText.addEventListener('input', function() {
                 const count = countValidLinks(this.value);
@@ -657,9 +762,13 @@
                 }
             });
 
+            // ============================================================
+            // راه‌اندازی اولیه
+            // ============================================================
             updateStats('', '');
-            statusMsg.textContent = '💡 لینک‌ها را وارد کرده و روی "تبدیل" کلیک کنید. IPv4 کلودفلر به IPv6 تبدیل می‌شود.';
+            statusMsg.textContent = '💡 روی «بارگیری از گیت‌هاب» بزن یا لینک‌ها را دستی وارد کن.';
             statusMsg.style.color = '#8b949e';
+
         })();
     </script>
 </body>
