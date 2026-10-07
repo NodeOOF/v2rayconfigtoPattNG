@@ -2,11 +2,12 @@ name = "config-converter-nodeoof"
 main = "src/index.js"
 compatibility_date = "2024-11-01"
 
-# کرون: هر ۶ ساعت
-[triggers]
-crons = ["0 */6 * * *"]
+# فقط کرون — هیچ route یا workers_dev فعال نیست
+workers_dev = false
 
-# متغیرهای عمومی
+[triggers]
+crons = ["0 */6 * * *"]   # هر ۶ ساعت
+
 [vars]
 GITHUB_OWNER  = "NodeOOF"
 GITHUB_REPO   = "v2rayconfigtoPattNG"

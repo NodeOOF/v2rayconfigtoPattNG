@@ -1,6 +1,6 @@
 // ============================================================
-// Cloudflare Worker - مبدل خودکار کانفیگ‌های Patterniha
-// ریپو مقصد: NodeOOF/v2rayconfigtoPattNG
+// Cloudflare Worker - فقط کرون تریگر
+// هیچ endpoint عمومی نداره. فقط configs.txt رو توی گیت‌هاب آپدیت می‌کنه.
 // ============================================================
 
 const CS_VALUE = 'TLS_AES_256_GCM_SHA384%3ATLS_CHACHA20_POLY1305_SHA256%3ATLS_AES_128_GCM_SHA256%3ATLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384%3ATLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384%3ATLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256%3ATLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256%3ATLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256%3ATLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256%3ATLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA%3ATLS_ECDHE_RSA_WITH_AES_256_CBC_SHA%3ATLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256%3ATLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256';
@@ -24,7 +24,7 @@ function ipv4ToIPv6(ipv4) {
   return `2606:4700::${hex.slice(0, 4)}:${hex.slice(4)}`;
 }
 
-// ============ تبدیل یک خط (پورت‌شده از index.html) ============
+// ============ تبدیل یک خط ============
 function convertLine(trimmed, index) {
   const isVless = trimmed.startsWith('vless://');
   const isTrojan = trimmed.startsWith('trojan://');
@@ -40,7 +40,6 @@ function convertLine(trimmed, index) {
     queryAndHash = trimmed.substring(firstQMark + 1);
   }
 
-  // IPv4 → IPv6 در هاست
   base = base.replace(/@(\[[^\]]+\]|[^:@/?#]+)(:\d+)?/, (match, host, port) => {
     if (host.startsWith('[')) return match;
     if (isIPv4(host)) return '@[' + ipv4ToIPv6(host) + ']' + (port || '');
@@ -56,14 +55,12 @@ function convertLine(trimmed, index) {
     hash = queryAndHash.substring(hashIndex);
   }
 
-  // IPv4 → IPv6 در query
   if (query) {
     query = query.replace(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/g, (ip) =>
       isIPv4(ip) ? ipv4ToIPv6(ip) : ip
     );
   }
 
-  // پارس پارامترها
   const params = new Map();
   if (query) {
     for (const pair of query.split('&')) {
@@ -179,50 +176,16 @@ async function runConversion(env) {
   const result = await pushFile(env, output, sha);
   console.log(`[4/4] Pushed. Commit: ${result.commit?.sha}`);
 
-  return {
-    ok: true,
-    count,
-    sourceSize: raw.length,
-    commit: result.commit?.sha,
-    at: new Date().toISOString(),
-  };
+  return { count, commit: result.commit?.sha };
 }
 
-// ============ Entry ============
+// ============ Entry (فقط scheduled، بدون fetch) ============
 export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil(
-      runConversion(env).catch(err => console.error('Scheduled failed:', err))
-    );
-  },
-
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-
-    // امنیت ساده: فقط با توکن قابل اجرا باشه
-    if (url.pathname === '/run') {
-      const token = url.searchParams.get('token');
-      if (env.RUN_TOKEN && token !== env.RUN_TOKEN) {
-        return new Response('Unauthorized', { status: 401 });
-      }
-      try {
-        const result = await runConversion(env);
-        return new Response(JSON.stringify(result, null, 2), {
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        });
-      } catch (err) {
-        return new Response(JSON.stringify({ ok: false, error: err.message }), {
-          status: 500,
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        });
-      }
-    }
-
-    return new Response(
-      `🔧 Config Converter\n\n` +
-      `GET /run?token=... → اجرای دستی\n` +
-      `Cron: هر ۶ ساعت خودکار`,
-      { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
+      runConversion(env)
+        .then(r => console.log(`✅ Done: ${r.count} configs, commit ${r.commit}`))
+        .catch(err => console.error('❌ Scheduled failed:', err))
     );
   },
 };
