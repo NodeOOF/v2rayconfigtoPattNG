@@ -350,11 +350,11 @@
             <div class="header__top">
                 <h1>پنل مبدل VLESS / Trojan / Shadowsocks <span class="eyebrow">SIGNAL BENCH</span></h1>
                 <div class="header__badges">
-                    <span class="chip chip--info">CS + FM</span>
+                    <span class="chip chip--info">CS + FM + IPv6</span>
                     <span class="chip chip--warn">FP = unsafe</span>
                 </div>
             </div>
-            <p class="sub">لینک‌های VLESS، Trojan و Shadowsocks (ss://) را وارد کن؛ پارامترهای cs، fm و fp روی VLESS/Trojan و فقط fm روی Shadowsocks اعمال می‌شود. هر لینک با یک نام جدید و شماره‌دار خروجی گرفته می‌شود.</p>
+            <p class="sub">لینک‌های VLESS، Trojan و Shadowsocks (ss://) را وارد کن؛ پارامترهای cs، fm و fp روی VLESS/Trojan و فقط fm روی Shadowsocks اعمال می‌شود. آدرس‌های IPv4 کلودفلر به IPv6 تبدیل می‌شوند. هر لینک با یک نام جدید و شماره‌دار خروجی گرفته می‌شود.</p>
         </div>
 
         <div class="grid">
@@ -405,6 +405,28 @@
             const FM_VALUE = '%7B%22tcp%22%3A%5B%7B%22type%22%3A%22fragment%22%2C%22settings%22%3A%7B%22packets%22%3A%22tlshello%22%2C%22lengths%22%3A%5B%22100-250%22%5D%2C%22delays%22%3A%5B%220%22%5D%2C%22maxSplit%22%3A%22200%22%7D%7D%2C%7B%22type%22%3A%22fragment%22%2C%22settings%22%3A%7B%22packets%22%3A%221-3%22%2C%22lengths%22%3A%5B%22200-400%22%5D%2C%22delays%22%3A%5B%220%22%5D%2C%22maxSplit%22%3A%22350%22%7D%7D%5D%2C%22udp%22%3A%5B%7B%22type%22%3A%22noise%22%2C%22settings%22%3A%7B%22reset%22%3A%2230%22%2C%22noise%22%3A%5B%7B%22rand%22%3A%22300-500%22%2C%22delay%22%3A%220%22%7D%2C%7B%22rand%22%3A%22300-500%22%2C%22delay%22%3A%220%22%7D%5D%7D%7D%5D%7D';
             const FP_VALUE = 'unsafe';
             const NAME_PREFIX = 'github.com/NodeOOF - ';
+
+            // ============================================================
+            // توابع تبدیل IPv4 به IPv6 (رنج کلودفلر 2606:4700::/32)
+            // ============================================================
+
+            // بررسی اینکه رشته یک IPv4 معتبر است
+            function isIPv4(str) {
+                if (typeof str !== 'string') return false;
+                const parts = str.split('.');
+                if (parts.length !== 4) return false;
+                return parts.every(p => /^\d{1,3}$/.test(p) && parseInt(p, 10) >= 0 && parseInt(p, 10) <= 255);
+            }
+
+            // تبدیل IPv4 به IPv6 در رنج کلودفلر
+            // مثال: 104.19.234.246 → 2606:4700::6813:eaf6
+            function ipv4ToIPv6(ipv4) {
+                const parts = ipv4.split('.').map(Number);
+                const hex = parts.map(p => p.toString(16).padStart(2, '0')).join('');
+                return `2606:4700::${hex.slice(0, 4)}:${hex.slice(4)}`;
+            }
+
+            // ============================================================
 
             // عناصر DOM
             const inputText = document.getElementById('inputLinks');
@@ -464,6 +486,16 @@
                             queryAndHash = trimmed.substring(firstQMark + 1);
                         }
 
+                        // === تبدیل IPv4 به IPv6 در بخش هاست (بعد از @) ===
+                        base = base.replace(/@(\[[^\]]+\]|[^:@\/?#]+)(:\d+)?/, (match, host, port) => {
+                            // اگر از قبل IPv6 بود (داخل براکت) دست نزن
+                            if (host.startsWith('[')) return match;
+                            if (isIPv4(host)) {
+                                return '@[' + ipv4ToIPv6(host) + ']' + (port || '');
+                            }
+                            return match;
+                        });
+
                         let query = '';
                         let hash = '';
                         const hashIndex = queryAndHash.indexOf('#');
@@ -472,6 +504,13 @@
                         } else {
                             query = queryAndHash.substring(0, hashIndex);
                             hash = queryAndHash.substring(hashIndex);
+                        }
+
+                        // === تبدیل IPv4 به IPv6 در پارامترهای query (مثل ech) ===
+                        if (query) {
+                            query = query.replace(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/g, (ip) => {
+                                return isIPv4(ip) ? ipv4ToIPv6(ip) : ip;
+                            });
                         }
 
                         const params = new Map();
@@ -548,7 +587,7 @@
                 updateStats(input, outputText.value);
 
                 if (result.count > 0) {
-                    statusMsg.textContent = `✅ ${result.count} لینک با موفقیت تبدیل و نام‌گذاری شدند (fp=unsafe برای VLESS/Trojan، fm برای همگی).`;
+                    statusMsg.textContent = `✅ ${result.count} لینک تبدیل شد (IPv4→IPv6، fp=unsafe، fm و cs اعمال شد).`;
                     statusMsg.style.color = '#3fb950';
                 } else {
                     statusMsg.textContent = '⚠️ هیچ لینک معتبری (VLESS/Trojan/SS) یافت نشد.';
@@ -593,14 +632,9 @@
                 }
 
                 try {
-                    // تبدیل متن خروجی به Base64 (برای پشتیبانی از UTF-8)
                     const utf8Bytes = unescape(encodeURIComponent(text));
                     const base64 = btoa(utf8Bytes);
-
-                    // ساخت URI با داده‌های Base64 (بسیاری از اپ‌های V2Ray این فرمت را پشتیبانی می‌کنند)
                     const uri = `v2rayng://install-config?url=data:text/plain;base64,${base64}`;
-
-                    // هدایت مرورگر به سمت برنامه
                     window.location.href = uri;
 
                     statusMsg.textContent = `📱 در حال ارسال ${countValidLinks(text)} کانفیگ به PattNG...`;
@@ -611,7 +645,6 @@
                 }
             });
 
-            // رویدادهای اصلی
             convertBtn.addEventListener('click', performConversion);
             copyBtn.addEventListener('click', copyOutput);
             clearBtn.addEventListener('click', clearAll);
@@ -625,7 +658,7 @@
             });
 
             updateStats('', '');
-            statusMsg.textContent = '💡 لینک‌ها را وارد کرده و روی "تبدیل" کلیک کنید. سپس با "افزودن به PattNG" مستقیماً وارد برنامه کنید.';
+            statusMsg.textContent = '💡 لینک‌ها را وارد کرده و روی "تبدیل" کلیک کنید. IPv4 کلودفلر به IPv6 تبدیل می‌شود.';
             statusMsg.style.color = '#8b949e';
         })();
     </script>
